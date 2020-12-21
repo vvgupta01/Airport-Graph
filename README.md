@@ -1,0 +1,4 @@
+The project can be compiled with `make` and ran with `./main` for a user-friendly interface that allows the user to manually enter cities and select airports to input into the program. After selecting the algorithm to run and the starting airport, additional destinations can be selected if running shortest-path breadth-first search (BFS) and A* search, otherwise no other input is required for generating the largest minimum spanning tree (MST) using Prim's algorithm. <br>
+
+Similarly, test cases that were used to test the program can be compiled with `make test` and ran with `./test`. Test cases can be viewed in the __/tests__ directory, while the airport and route datasets along with the python script used to filter and clean the data can be viewed in the __/data__ directory. All relevant documents such as the development log, results, and presentation can be found in the __/documents__ directory.
+
