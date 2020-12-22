@@ -3,7 +3,7 @@ OBJS = main.o graph.o heap.o airport.o route.o
 TEST_OBJS = graph.o heap.o airport.o route.o
 
 CXX = clang++
-CXXFLAGS = -std=c++1y -stdlib=libc++ -c -g -O0 -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++1y -stdlib=libc++ -c -g -O2 -Wall -Wextra -pedantic
 LDFLAGS = -std=c++1y -stdlib=libc++ -lc++abi -lm
 
 all : $(EXENAME)

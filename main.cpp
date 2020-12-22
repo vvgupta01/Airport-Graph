@@ -1,11 +1,12 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 #include "graph.h"
 
 using namespace std;
 
-string get_input(const string prompt) {
+string get_input(string prompt) {
     string input;
     cout << prompt << ": ";
     std::getline(cin, input);
@@ -24,8 +25,7 @@ int get_airport(const Graph & graph, const string prompt) {
 
     vector<Airport*> airports = graph.get_airports();
     for (unsigned int i = 0; i < city_airports.size(); i++) {
-        cout << "[" << i + 1 << "] " << airports[city_airports[i]] -> get_name() 
-            << " (" << airports[city_airports[i]] -> get_id() << ")" << endl;
+        cout << "[" << i + 1 << "] " << airports[city_airports[i]] << endl;
     }
 
     stringstream ap_prompt;
@@ -35,7 +35,7 @@ int get_airport(const Graph & graph, const string prompt) {
     } else {
         ap_prompt << "-" << city_airports.size() << "]";
     }
-    
+
     unsigned long airport = std::stoi(get_input(ap_prompt.str()));
     while (airport < 1 || airport > city_airports.size()) {
         cout << "Invalid Airport" << endl;
@@ -46,95 +46,101 @@ int get_airport(const Graph & graph, const string prompt) {
 
 void print_path(const vector<Route*> & path, int dest_id) {
     if (path.empty()) {
-        cout << "Incomplete Path Found" << endl;
+        cout << "No Path Found" << endl;
     } else if (path.back() -> get_dest() -> get_id() != dest_id) {
-        cout << "Incomplete Path Found:" << endl;
+        cout << "Partially Complete Path Found:" << endl;
     } else {
         float cost = 0;
         for (Route * route : path) {
             cost += route -> get_weight();
         }
-        cout << "Complete Path Found in " << path.size() 
-            << " Route(s) at " << cost << " cost:" << endl;
+        cout << "Complete Path Found in " << path.size()
+             << " Route(s) at " << cost << " cost:" << endl;
     }
 
     for (Route * route : path) {
-        Airport * src = route -> get_src();
-        Airport * dest = route -> get_dest();
-        cout << src -> get_name() << " (" << src -> get_id() << ")" << " --- " 
-            << route -> get_label() << " [" << route -> get_weight() << "]" << " --> " 
-            << dest -> get_name() << " (" << dest -> get_id() << ")" << endl;
+        cout << route << endl;
     }
 }
 
-void print_mst(const Graph & mst, const vector<Route*> & tree) {
-    float cost = 0;
+void path_search(Graph & graph, vector<int> & airports) {
+    print_path(graph.bfs(airports), airports.back());
+    print_path(graph.a_star_search(airports), airports.back());
+}
 
-    string missing = "";
+void prim_mst(Graph & graph, int start_id, string filename) {
+    Graph mst(false);
+    vector<Route*> tree = graph.prim_mst(mst, start_id);
+
+    float cost = 0;
+    stringstream missing;
     vector<Airport*> airports = mst.get_airports();
     for (unsigned int i = 0; i < airports.size(); i++) {
         if (airports[i] != NULL) {
-             for (Route * route : airports[i] -> get_routes()) {
+            for (Route * route : airports[i] -> get_routes()) {
                 cost += route -> get_weight();
             }
         } else {
-            missing += std::to_string(i) + " ";
+            missing << i << " ";
         }
     }
 
-    float coverage = 100.0 * (tree.size() + 1) / mst.get_airports().size();
-    cout << "Contains " << tree.size() + 1 << " airports (" << coverage 
-            << "% coverage)" << " at " << cost << " cost:" << endl;
-    
-    
+    float coverage = 100.0 * (tree.size() + 1) / airports.size();
+    cout << "Contains " << tree.size() + 1 << " airports (" << coverage
+         << "% coverage)" << " at " << cost << " cost:" << endl;
+    cout << "Missing airports: " << missing.str() << endl;
+
+    ofstream file(filename);
     for (Route * route : tree) {
-        Airport * src = route -> get_src();
-        Airport * dest = route -> get_dest();
-        cout << src -> get_name() << " (" << src -> get_id() << ")" << " --- " 
-            << route -> get_label() << " [" << route -> get_weight() << "]" << " --> " 
-            << dest -> get_name() << " (" << dest -> get_id() << ")" << endl;
+        file << route << endl;
     }
-    cout << endl << "Missing airports: " << missing << endl;
+    cout << "Saved MST routes to " << filename << endl;
+    file.close();
 }
 
-int main() {
+int main(int argc, char** argv) {
     Graph graph(true);
     graph.initialize();
 
-    bool query = true;
-    while (query) {
-        cout << endl;
-        vector<int> airports;
-        airports.push_back(get_airport(graph, "Enter Starting City"));
+    if (argc == 1) {
+        bool query = true;
+        while (query) {
+            vector<int> airports;
+            airports.push_back(get_airport(graph, "Enter Starting City"));
 
-        cout << endl << "[1] Shortest-Path BFS, A* Search" << endl 
-            << "[2] Largest Prim MST" << endl;
-        int algorithm = std::stoi(get_input("Select Algorithm"));
-        while (algorithm != 1 && algorithm != 2) {
-            cout << "Invalid Algorithm";
-            algorithm = std::stoi(get_input("Select Algorithm"));
-        }
-        cout << endl;
-
-        if (algorithm == 1) {
-            int dests = std::stoi(get_input("Enter Number of Destinations"));
-            for (int dest = 1; dest <= dests; dest++) {
-                stringstream prompt;
-                prompt << "Enter Destination (" << dest << "/" << dests << ")";
-                airports.push_back(get_airport(graph, prompt.str()));
+            cout << endl << "[1] Shortest-Path BFS, A* Search" << endl
+                 << "[2] Largest Prim MST" << endl;
+            int algorithm = std::stoi(get_input("Select Algorithm"));
+            while (algorithm != 1 && algorithm != 2) {
+                cout << "Invalid Algorithm";
+                algorithm = std::stoi(get_input("Select Algorithm"));
             }
-            vector<Route*> bfs_path = graph.bfs(airports);
-            print_path(bfs_path, airports.back());
+            cout << endl;
 
-            vector<Route*> a_path = graph.a_star_search(airports);
-            print_path(a_path, airports.back());
-        } else if (algorithm == 2) {
-            Graph mst(false);
-            vector<Route*> tree = graph.prim_mst(mst, airports[0]);
-            print_mst(mst, tree);
+            if (algorithm == 1) {
+                int dests = std::stoi(get_input("Enter Number of Destinations"));
+                for (int dest = 1; dest <= dests; dest++) {
+                    stringstream prompt;
+                    prompt << "Enter Destination (" << dest << "/" << dests << ")";
+                    airports.push_back(get_airport(graph, prompt.str()));
+                }
+                path_search(graph, airports);
+            } else {
+                prim_mst(graph, airports[0], "data/prim-mst-routes.txt");
+            }
+
+            cout << endl;
+            query = (get_input("Requery? [Y/N]") == "y");
         }
-
-        cout << endl;
-        query = (get_input("Requery? [Y/N]") == "y");
+    } else {
+        if (argc == 2) {
+            prim_mst(graph, std::stoi(argv[1]), "data/prim-mst-routes.txt");
+        } else {
+            vector<int> airports;
+            for (int i = 1; i < argc; i++) {
+                airports.push_back(std::stoi(argv[i]));
+            }
+            path_search(graph, airports);
+        }
     }
 }

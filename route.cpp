@@ -27,3 +27,10 @@ string Route::get_label() const {
 float Route::get_weight() const {
     return weight;
 }
+
+std::ostream & operator<<(std::ostream & os, const Route * route) {
+    return os << route -> get_src() -> get_name() << " (" << route -> get_src() -> get_id()
+              << ")" << " --- " << route -> get_label() << " [" << route -> get_weight()
+              << "]" << " --> " << route -> get_dest() -> get_name() << " ("
+              << route -> get_dest() -> get_id() << ")";
+}

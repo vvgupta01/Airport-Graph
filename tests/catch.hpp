@@ -236,7 +236,7 @@ namespace Catch {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Use of __COUNTER__ is suppressed during code analysis in
-// CLion/AppCode 2017.2.x and former, because __COUNTER__ is not properly
+// Airport-Graph/AppCode 2017.2.x and former, because __COUNTER__ is not properly
 // handled by it.
 // Otherwise all supported compilers support COUNTER macro,
 // but user still might want to turn it off

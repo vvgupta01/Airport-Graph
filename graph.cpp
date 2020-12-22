@@ -30,8 +30,8 @@ void Graph::initialize() {
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     if (output) {
         cout << "Generated graph in " << time << "ms" << endl;
-        cout << "Loaded " << num_airports << " airports, " << num_routes 
-            << " routes" << endl;
+        cout << "Loaded " << num_airports << " airports, " << num_routes
+             << " routes" << endl << endl;
     }
 }
 
@@ -47,6 +47,7 @@ int Graph::read_airports(const string filename) {
         insert_airport(new Airport(airport_id, name, city));
         airport_id++;
     }
+    file.close();
     return airport_id;
 }
 
@@ -65,6 +66,7 @@ int Graph::read_routes(const string filename) {
         insert_route(new Route(src, dest, label, std::stof(weight)));
         routes++;
     }
+    file.close();
     return routes;
 }
 
@@ -126,7 +128,7 @@ vector<Route*> Graph::a_star_search(const vector<int> & dests) {
 
         Graph spt(false);
         spt.airports.resize(airports.size(), NULL);
-        
+
         int current = -1;
         for (unsigned long i = 0; i < airports.size() && current != dest -> get_id(); i++) {
             current = heap.pop();
@@ -134,21 +136,21 @@ vector<Route*> Graph::a_star_search(const vector<int> & dests) {
                 break;
             }
 
-            spt.airports[current] = new Airport(current, airports[current] -> get_name(), 
-                airports[current] -> get_city());
-            
+            spt.airports[current] = new Airport(current, airports[current] -> get_name(),
+                                                airports[current] -> get_city());
+
             Route * pred = predecessor[current];
             if (pred != NULL) {
-                Route * route_copy = new Route(spt.airports[pred -> get_src() -> get_id()], 
-                    spt.airports[current], pred -> get_label(), pred -> get_weight());
+                Route * route_copy = new Route(spt.airports[pred -> get_src() -> get_id()],
+                                               spt.airports[current], pred -> get_label(), pred -> get_weight());
                 spt.insert_route(route_copy);
             }
 
             for (Route * route : airports[current] -> get_routes()) {
                 Airport * dest = route -> get_dest();
                 if (spt.airports[dest -> get_id()] == NULL) {
-                    float curr_cost = heap.get_cost(current) + route -> get_weight() + 
-                        heuristic(dest -> get_id());
+                    float curr_cost = heap.get_cost(current) + route -> get_weight() +
+                                      heuristic(dest -> get_id());
                     if (curr_cost < heap.get_cost(dest -> get_id())) {
                         heap.update(dest -> get_id(), curr_cost);
                         predecessor[dest -> get_id()] = route;
@@ -187,20 +189,19 @@ vector<Route*> Graph::prim_mst(Graph & mst, int src_id) {
 
     mst.airports.resize(airports.size(), NULL);
 
-    int current = -1;
     for (unsigned long i = 0; i < airports.size(); i++) {
-        current = heap.pop();
+        int current = heap.pop();
         if (heap.get_cost(current) == 1000) {
             break;
         }
 
-        mst.airports[current] = new Airport(current, airports[current] -> get_name(), 
-            airports[current] -> get_city());
-        
+        mst.airports[current] = new Airport(current, airports[current] -> get_name(),
+                                            airports[current] -> get_city());
+
         Route * pred = predecessor[current];
         if (pred != NULL) {
-            Route * route_copy = new Route(mst.airports[pred -> get_src() -> get_id()], 
-                mst.airports[current], pred -> get_label(), pred -> get_weight());
+            Route * route_copy = new Route(mst.airports[pred -> get_src() -> get_id()],
+                                           mst.airports[current], pred -> get_label(), pred -> get_weight());
             mst.insert_route(route_copy);
             tree.push_back(route_copy);
         }

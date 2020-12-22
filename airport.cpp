@@ -36,3 +36,7 @@ string Airport::get_name() const {
 string Airport::get_city() const {
     return city;
 }
+
+std::ostream & operator<<(std::ostream & os, const Airport * airport) {
+    return os << airport -> get_name() << " (" << airport -> get_id() << ")";
+}
