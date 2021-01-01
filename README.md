@@ -1,4 +1,4 @@
-This project was compiled with clang version 6.0.1.
+This project was compiled with clang version 6.0.1 on a Linux system.
 
 ### Overview
 This project implements a directed, weighted graph representing the network of airport routes within the U.S. Airports are represented as nodes while flights are represented as edges. The complete graph contains 10484 routes by 72 airlines covering 539 airports in 519 cities.
@@ -9,17 +9,15 @@ Datasets were obtained from [OpenFlights](https://openflights.org/data.html) and
 Route weights were artificially generated as costs inversely proportional to the frequency of the destination airport and the airline (i.e. routes with popular airlines/destinations cost less). Both components of the weight were normalized by their respective averages before being summed to generate the overall weight.
 
 ### Algorithms
-The four algorithms implemented are:
-1. __Shortest-Path Breadth-First Search (BFS)__: Finds the shortest-path between the source and destination airport non-recursively, defined as the minimum number of airports between them (ignoring route costs), which is not necessarily guaranteed to exist. As opposed to Depth-First Search, BFS explores all neighbor airports at a given distance before exploring those at the next distance.
-2. __Prim's Minimum Spanning Tree (MST)__: Finds the largest minimum spanning tree according to Prim's algorithm. Since the graph is weakly connected, the MST only contains airports that are reachable from the starting airport. Implements a priority queue as a min heap that returns the lowest cost airport that has not been visited yet.
-3. __Shortest-Path A* Search__: Finds the shortest-path between the source and destination airport by generating the shortest-path tree, defined as the minimum route cost between them, which is not necessarily guaranteed to exist. Essentially a combination of BFS and Prim's MST to create Dijkstra's algorithm with an additional heuristic function to estimate the cost of a solution through any given airport. Since the heuristic must be admissible, it simply finds the lowest cost route from a given airport in order to never overestimate its cost.
-4. __Landmark Path__: Finds the shortest-path from airport A to airport B through airport C, which is simply the shortest-path from A to C combined with the shortest-path from C to B. This is indirectly implemented in both BFS and A* Search, which perform separate searches for each destination airport sequentially by taking the last destination as the new source.
+The three algorithms implemented are:
+1. __Dijkstra's Algorithm__: Implements Dijkstra's Algorithm for finding the Single-Source Shortest-Path (SSSP). Finds the shortest-path between the source and destination airport, defined as the minimum route cost between them, which is not necessarily guaranteed to exist. Automatically finds the landmark path for multiple destinations by performing the algorithm for each airport sequentially.
+    * __Landmark Path__: Finds the shortest-path from airport A to airport B through airport C, which is simply the shortest-path from A to C combined with the shortest-path from C to B. Separate searches are performed for each destination airport by taking the last destination as the new source and combining each subpath to derive the full path.
+2. __Prim's Algorithm__: Implements Prim's Algorithm for finding the minimum spanning tree (MST). Since not all airports are guaranteed to be reachable from a given starting airport, the algorithm generates the largest possible MST. Additionally implements a priority queue as a min heap that returns the lowest cost airport that has not been visited yet.
+3. __Floyd-Warshall's Algorithm__: Implements Floyd-Warshall's algorithm for finding the All-Pairs Shortest-Path (APSP). Specifically calculates the betweenness centrality of every airport by finding the shortest-path between every pair of airports in the graph. Betweenness centrality is defined as the number of shortest-paths through a given airport divided by the number of total shortest-paths not including the airport as a source or destination. 
 
 ### Running
-The project can be compiled with `make` and ran with `./main` for a user-friendly interface that provides a guided entry of city and airport inputs. Prim's MST only requires a starting airport while shortest-path searches require at least one destination in addition. Command-line arguments can also be provided for quick queries if airport IDs are known. 
+The project can be compiled with `make` and ran with `./main` for a user-friendly interface that provides a guided entry of city and airport inputs. Floyd-Warshall's algorithm requires no arguments and Prim's algorithm only requires a starting airport, while Dijkstra's Algorithm requires at least one destination in addition to a starting airport. Command-line arguments can also be provided for quick queries if airport IDs are known. 
 
 For instance, `./main 200` finds Prim's MST starting at Chicago O'Hare International Airport, while `./main 200 124` finds the shortest-path from Chicago O'Hare International Airport to Hartsfield Jackson Atlanta International Airport. Any number of destinations can be entered, and the ID for each airport can be found in the airport dataset.
 
-A subset of test cases that were used to test the program can be compiled with `make test` and ran with `./test`. 
-
-Test cases can be found in the __tests__ directory, while the airport and route datasets along with the python script used to clean the data can be found in the __data__ directory. The routes consisting of the graph generated by Prim's MST can be found in __data/prim-mst-routes.txt__.
+All algorithms generate a text file containing their results in the __data__ directory, which is also where the airport and route datasets along with the python script used to clean the data can be found.
