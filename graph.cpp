@@ -5,18 +5,15 @@
 
 #include "graph.h"
 
+#include <map>
 #include <queue>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <chrono>
 
-Graph::Graph(bool output) {
-    this -> output = output;
-}
-
 Graph::~Graph() {
-    for (Airport * airport : airports) {
+    for (Airport *airport : airports) {
         delete airport;
     }
 }
@@ -28,16 +25,14 @@ void Graph::initialize() {
     auto end = chrono::steady_clock::now();
 
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    if (output) {
-        cout << "Generated graph in " << time << "ms" << endl;
-        cout << "Loaded " << num_airports << " airports, " << num_routes
-             << " routes" << endl << endl;
-    }
+    cout << "Generated graph in " << time << "ms" << endl;
+    cout << "Loaded " << num_airports << " nodes, " << num_routes 
+        << " edges" << endl << flush;
 }
 
-int Graph::read_airports(const string filename) {
+int Graph::read_airports(const string &file_path) {
     string name, city;
-    ifstream file(filename);
+    ifstream file(file_path);
 
     int airport_id = 0;
     while (std::getline(file, name, ',')) {
@@ -51,9 +46,9 @@ int Graph::read_airports(const string filename) {
     return airport_id;
 }
 
-int Graph::read_routes(const string filename) {
+int Graph::read_routes(const string &file_path) {
     string src_id, dest_id, label, weight;
-    ifstream file(filename);
+    ifstream file(file_path);
 
     int routes = 0;
     while (std::getline(file, src_id, ',')) {
@@ -63,108 +58,61 @@ int Graph::read_routes(const string filename) {
 
         Airport * src = airports[std::stoi(src_id)];
         Airport * dest = airports[std::stoi(dest_id)];
-        insert_route(new Route(src, dest, label, std::stof(weight)));
+        insert_route(new Route(src, dest, label, std::stod(weight)));
         routes++;
     }
     file.close();
     return routes;
 }
 
-vector<Route*> Graph::bfs(const vector<int> & dests) {
+vector<Route*> Graph::dijkstra(const vector<int> &dest_ids) const {
     auto start = chrono::steady_clock::now();
 
     vector<Route*> path;
-    for (unsigned long i = 0; i < dests.size() - 1; i++) {
-        Airport * src = airports[dests[i]], *dest = airports[dests[i + 1]];
+    for (unsigned long i = 0; i < dest_ids.size() - 1; i++) {
+        int src_id = dest_ids[i], dest_id = dest_ids[i + 1];
 
-        queue<Airport*> bfs_queue;
+        Heap heap(airports.size(), src_id);
         vector<Route*> predecessor(airports.size(), NULL);
 
-        bfs_queue.push(src);
-        Airport * current = src;
-        while (current != dest && !bfs_queue.empty()) {
-            current = bfs_queue.front();
-            bfs_queue.pop();
-
-            for (Route * route : current -> get_routes()) {
-                Airport * dest = route -> get_dest();
-                if (predecessor[dest -> get_id()] == NULL) {
-                    bfs_queue.push(dest);
-                    predecessor[dest -> get_id()] = route;
-                }
-            }
-        }
-
-        if (current != dest) {
-            break;
-        }
-
-        vector<Route*> subpath;
-        while (current != src) {
-            subpath.push_back(predecessor[current -> get_id()]);
-            current = predecessor[current -> get_id()] -> get_src();
-        }
-        std::reverse(subpath.begin(), subpath.end());
-        path.insert(path.end(), subpath.begin(), subpath.end());
-    }
-
-    auto end = chrono::steady_clock::now();
-    auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    if (output) {
-        cout << endl << "Completed Shortest-Path BFS in " << time << "ms" << endl;
-    }
-    return path;
-}
-
-vector<Route*> Graph::a_star_search(const vector<int> & dests) {
-    auto start = chrono::steady_clock::now();
-
-    vector<Route*> path;
-    for (unsigned long i = 0; i < dests.size() - 1; i++) {
-        Airport * src = airports[dests[i]], *dest = airports[dests[i + 1]];
-
-        Heap heap(airports.size(), src -> get_id());
-        vector<Route*> predecessor(airports.size(), NULL);
-
-        Graph spt(false);
+        Graph spt;
         spt.airports.resize(airports.size(), NULL);
-
+        
         int current = -1;
-        for (unsigned long i = 0; i < airports.size() && current != dest -> get_id(); i++) {
+        while (current != dest_id) {
             current = heap.pop();
-            if (heap.get_cost(current) == 1000) {
+            if (heap.get_cost(current) == INT_MAX) {
                 break;
             }
 
-            spt.airports[current] = new Airport(current, airports[current] -> get_name(),
-                                                airports[current] -> get_city());
-
-            Route * pred = predecessor[current];
+            spt.airports[current] = new Airport(current, airports[current] -> get_name(), 
+                airports[current] -> get_city());
+            
+            Route *pred = predecessor[current];
             if (pred != NULL) {
-                Route * route_copy = new Route(spt.airports[pred -> get_src() -> get_id()],
-                                               spt.airports[current], pred -> get_label(), pred -> get_weight());
+                Route *route_copy = new Route(spt.airports[pred -> get_src() -> get_id()], 
+                    spt.airports[current], pred -> get_label(), pred -> get_weight());
                 spt.insert_route(route_copy);
             }
 
-            for (Route * route : airports[current] -> get_routes()) {
-                Airport * dest = route -> get_dest();
-                if (spt.airports[dest -> get_id()] == NULL) {
-                    float curr_cost = heap.get_cost(current) + route -> get_weight() +
-                                      heuristic(dest -> get_id());
-                    if (curr_cost < heap.get_cost(dest -> get_id())) {
-                        heap.update(dest -> get_id(), curr_cost);
-                        predecessor[dest -> get_id()] = route;
+            for (Route *route : airports[current] -> get_routes()) {
+                int dest_id = route -> get_dest() -> get_id();
+                if (spt.airports[dest_id] == NULL) {
+                    double curr_cost = heap.get_cost(current) + route -> get_weight();
+                    if (curr_cost < heap.get_cost(dest_id)) {
+                        heap.update(dest_id, curr_cost);
+                        predecessor[dest_id] = route;
                     }
                 }
             }
         }
 
-        if (current != dest -> get_id()) {
+        if (current != dest_id) {
             break;
         }
 
         vector<Route*> subpath;
-        while (current != src -> get_id()) {
+        while (current != src_id) {
             subpath.push_back(predecessor[current]);
             current = predecessor[current] -> get_src() -> get_id();
         }
@@ -174,13 +122,11 @@ vector<Route*> Graph::a_star_search(const vector<int> & dests) {
 
     auto end = chrono::steady_clock::now();
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    if (output) {
-        cout << endl << "Completed Shortest-Path A* Search in " << time << "ms" << endl;
-    }
+    cout << endl << "Completed Dijkstra's Algorithm in " << time << "ms" << endl;
     return path;
 }
 
-vector<Route*> Graph::prim_mst(Graph & mst, int src_id) {
+vector<Route*> Graph::prim_mst(Graph &mst, int src_id) const {
     auto start = chrono::steady_clock::now();
 
     Heap heap(airports.size(), src_id);
@@ -191,23 +137,23 @@ vector<Route*> Graph::prim_mst(Graph & mst, int src_id) {
 
     for (unsigned long i = 0; i < airports.size(); i++) {
         int current = heap.pop();
-        if (heap.get_cost(current) == 1000) {
+        if (heap.get_cost(current) == INT_MAX) {
             break;
         }
 
-        mst.airports[current] = new Airport(current, airports[current] -> get_name(),
-                                            airports[current] -> get_city());
-
-        Route * pred = predecessor[current];
+        mst.airports[current] = new Airport(current, airports[current] -> get_name(), 
+            airports[current] -> get_city());
+        
+        Route *pred = predecessor[current];
         if (pred != NULL) {
-            Route * route_copy = new Route(mst.airports[pred -> get_src() -> get_id()],
-                                           mst.airports[current], pred -> get_label(), pred -> get_weight());
+            Route *route_copy = new Route(mst.airports[pred -> get_src() -> get_id()], 
+                mst.airports[current], pred -> get_label(), pred -> get_weight());
             mst.insert_route(route_copy);
             tree.push_back(route_copy);
         }
 
-        for (Route * route : airports[current] -> get_routes()) {
-            Airport * dest = route -> get_dest();
+        for (Route *route : airports[current] -> get_routes()) {
+            Airport *dest = route -> get_dest();
             if (mst.airports[dest -> get_id()] == NULL) {
                 if (route -> get_weight() < heap.get_cost(dest -> get_id())) {
                     heap.update(dest -> get_id(), route -> get_weight());
@@ -219,23 +165,85 @@ vector<Route*> Graph::prim_mst(Graph & mst, int src_id) {
 
     auto end = chrono::steady_clock::now();
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    if (output) {
-        cout << "Generated Largest Prim MST in " << time << "ms" << endl;
-    }
+    cout << endl << "Completed Prim's Algorithm in " << time << "ms" << endl;
     return tree;
 }
 
-float Graph::heuristic(int id) {
-    float min_weight = 1000;
-    for (Route * route : airports[id] -> get_routes()) {
-        if (route -> get_weight() < min_weight) {
-            min_weight = route -> get_weight();
+vector<double> Graph::floyd_warshall() const {
+    auto start = chrono::steady_clock::now();
+
+    vector<vector<double>> adj_matrix(airports.size(), 
+        vector<double>(airports.size(), INT_MAX));
+    vector<vector<int>> successor(airports.size(), 
+        vector<int>(airports.size(), -1));
+    
+    for (unsigned long i = 0; i < airports.size(); i++) {
+        adj_matrix[i][i] = 0;
+        successor[i][i] = i;
+        for (Route *route : airports[i] -> get_routes()) {
+            int dest_id = route -> get_dest() -> get_id();
+            adj_matrix[i][dest_id] = route -> get_weight();
+            successor[i][dest_id] = dest_id;
         }
     }
-    return min_weight;
+
+    for (unsigned long i = 0; i < airports.size(); i++) {
+        for (unsigned long j = 0; j < airports.size(); j++) {
+            if (i != j && adj_matrix[j][i] < INT_MAX) {
+                for (unsigned long k = 0; k < airports.size(); k++) {
+                    if (j != k && k != i && adj_matrix[i][k] < INT_MAX) {
+                        double new_cost = adj_matrix[j][i] + adj_matrix[i][k];
+                        if (new_cost < adj_matrix[j][k]) {
+                            adj_matrix[j][k] = new_cost;
+                            successor[j][k] = i;
+                        }
+                    }
+                }
+            } 
+        }
+    }
+
+    int unique_paths = 0;
+    for (unsigned long i = 0; i < airports.size(); i++) {
+        for (unsigned long j = 0; j < airports.size(); j++) {
+            if (i != j && adj_matrix[i][j] < INT_MAX) {
+                unique_paths++;
+            }
+        }
+    }
+
+    int total_paths = 0;
+    vector<double> centralities(airports.size());
+    for (unsigned long i = 0; i < airports.size(); i++) {
+        int paths = 0, possible_paths = 0;
+        for (unsigned long j = 0; j < airports.size(); j++) {
+            for (unsigned long k = 0; k < airports.size(); k++) {
+                if (j != i && k != i && j != k && adj_matrix[j][k] < INT_MAX) {
+                    possible_paths++;
+                    unsigned long current = j;
+                    while (current != k) {
+                        current = successor[current][k];
+                        if (current == i) {
+                            paths++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        total_paths += paths;
+        centralities[i] = (double)paths / possible_paths;
+    }
+
+    auto end = chrono::steady_clock::now();
+    auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    cout << endl << "Completed Floyd-Warshall's Algorithm in " << time << "ms" << endl;
+    cout << "Unique Shortest-Paths: " << unique_paths << endl;
+    cout << "Average Shortest-Paths Per Airport: " << total_paths / airports.size() << endl;
+    return centralities;
 }
 
-vector<int> Graph::get_airports_in_city(string city) const {
+vector<int> Graph::get_airports_in_city(string &city) const {
     vector<int> city_airports;
 
     transform(city.begin(), city.end(), city.begin(), ::toupper);
@@ -250,11 +258,11 @@ vector<int> Graph::get_airports_in_city(string city) const {
     return city_airports;
 }
 
-void Graph::insert_airport(Airport * airport) {
+void Graph::insert_airport(Airport *airport) {
     airports.push_back(airport);
 }
 
-void Graph::insert_route(Route * route) {
+void Graph::insert_route(Route *route) {
     route -> get_src() -> add_route(route);
 }
 

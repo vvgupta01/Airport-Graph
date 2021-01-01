@@ -3,6 +3,8 @@
  * Implementation of airport class.
  */
 
+#include <iostream>
+
 #include "airport.h"
 
 Airport::Airport(int id, string name, string city) {
@@ -12,12 +14,12 @@ Airport::Airport(int id, string name, string city) {
 }
 
 Airport::~Airport() {
-    for (Route * route : routes) {
+    for (Route *route : routes) {
         delete route;
     }
 }
 
-void Airport::add_route(Route * route) {
+void Airport::add_route(Route *route) {
     routes.push_back(route);
 }
 
@@ -37,6 +39,6 @@ string Airport::get_city() const {
     return city;
 }
 
-std::ostream & operator<<(std::ostream & os, const Airport * airport) {
+std::ostream &operator<<(std::ostream &os, const Airport *airport) {
     return os << airport -> get_name() << " (" << airport -> get_id() << ")";
 }

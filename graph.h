@@ -6,7 +6,6 @@
 #pragma once
 
 #include <string>
-#include <map>
 
 #include "heap.h"
 #include "airport.h"
@@ -21,11 +20,6 @@ using namespace std;
  */
 class Graph {
     public:
-        /**
-         * Constructor to create empty graph.
-         * @param output Print output to console or not.
-         */
-        Graph(bool output);
 
         // Destructor to delete graph.
         ~Graph();
@@ -36,10 +30,10 @@ class Graph {
         /**
          * Helper function to read CSV of airport data and 
          * add airports to graph.
-         * @param filename File name to read.
+         * @param file_path File path to read.
          * @returns Number of airports added.
          */
-        int read_airports(const string filename);
+        int read_airports(const string &file_path);
 
          /**
          * Helper function to read CSV of route data and 
@@ -47,32 +41,20 @@ class Graph {
          * @param filename File name to read.
          * @returns Number of routes added.
          */
-        int read_routes(const string filename);
+        int read_routes(const string &file_path);
 
         /**
-         * Performs Shortest-Path Breadth-First Search on graph 
-         * from one airport to the next in sequential order.
-         * 
-         * Shortest path is defined as the path with the least number
-         * of airports/routes, which is not guaranteed to exist.
-         * @param dests Reference to vector of airport IDs to visit.
-         * @returns Vector of routes creating shortest-path to most
-         * reachable destination.
-         */ 
-        vector<Route*> bfs(const vector<int> & dests);
-
-        /**
-         * Performs Shortest-Path A* Search on graph from one
-         * airport to the next in sequential order by generating a
-         * shortest-path tree.
+         * Performs Dijkstra's Algorithm for Single-Source Shortest-Path on
+         * graph from one airport to the next in sequential order by
+         * generating a shortest-path tree.
          * 
          * Shortest path is defined as the path with the lowest cost,
          * which is not guaranteed to exist.
-         * @param dests Reference to vector of airport IDs to visit.
+         * @param dest_ids Reference to vector of airport IDs to visit.
          * @returns Vector of routes creating shortest-path to most
          * reachable destination.
          */ 
-        vector<Route*> a_star_search(const vector<int> & dests);
+        vector<Route*> dijkstra(const vector<int> &dest_ids) const;
 
         /**
          * Performs Prim's Algorithm on graph to generate the largest
@@ -82,39 +64,40 @@ class Graph {
          * lowest cost routes to all airports that are reachable by the 
          * starting airport.
          * @param mst Minimum spanning tree to populate.
-         * @param start_id ID of starting airport.
+         * @param src_id ID of starting airport.
          */ 
-        vector<Route*> prim_mst(Graph & mst, int src_id);
+        vector<Route*> prim_mst(Graph &mst, int src_id) const;
 
         /**
-         * Helper heuristic function used by A* Search to estimate cost of
-         * path from given airport to destination.
-         * 
-         * Estimates cost based on lowest cost route from airport in order 
-         * for heuristic to be admissible.
-         * @param id ID of airport to calculate heuristic.
-         * @returns Estimated cost from airport to destination.
-         */ 
-        float heuristic(int id);
+         * Performs Floyd-Warshall's algorithm to calculate the betweenness
+         * centrality of every airport by finding the shortest path between
+         * every pair of airports in the graph.
+         *
+         * Betweenness centrality is defined as the number of shortest paths
+         * through a given airport divided by the total number of shortest paths
+         * that do not include the airport as a source or destination.
+         * @returns Vector representing the betweenness centrality of each airport.
+         */
+        vector<double> floyd_warshall() const;
 
         /**
          * Returns all airports located in a given city.
          * @param city Name of city to get all airports in.
          * @returns Vector of pointers to all airports in given city.
          */
-        vector<int> get_airports_in_city(string city) const;
+        vector<int> get_airports_in_city(string &city) const;
 
         /**
          * Helper function to insert airport in graph.
          * @param airport Pointer to airport to insert in graph.
          */
-        void insert_airport(Airport * airport);
+        void insert_airport(Airport *airport);
 
         /**
          * Helper function to insert route in graph.
          * @param route Pointer to route to insert in graph.
          */
-        void insert_route(Route * route);
+        void insert_route(Route *route);
 
         /**
          * Returns all airports in the graph, used for testing.
@@ -124,5 +107,4 @@ class Graph {
 
     private:
         vector<Airport*> airports;
-        bool output;
 };

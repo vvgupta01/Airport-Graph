@@ -6,6 +6,7 @@
 #pragma once
 
 #include <vector>
+
 #include "airport.h"
 
 using namespace std;
@@ -56,7 +57,7 @@ class Heap {
          * @param id Airport ID to return cost of.
          * @returns Cost of airport.
          */
-        float get_cost(int id) const;
+        double get_cost(int id) const;
 
         /**
          * Helper function to return the index of the child 
@@ -80,7 +81,7 @@ class Heap {
          * @param idx Node index in airport IDs.
          * @returns Node index of left child in airport IDs.
          */
-        int get_lchild(int idx) const;
+        unsigned long get_lchild(int idx) const;
 
         /**
          * Helper function to return the index of the right 
@@ -88,16 +89,16 @@ class Heap {
          * @param idx Node index in airport IDs.
          * @returns Node index of right child in airport IDs.
          */
-        int get_rchild(int idx) const;
+        unsigned long get_rchild(int idx) const;
 
         /**
          * Helper function to return the parent of a given node.
          * @param idx Node index in airport IDs.
          * @returns Node index of parent in airport IDs.
          */
-        int get_parent(int idx) const;
+        unsigned long get_parent(int idx) const;
 
     private:
         vector<int> ids;
-        vector<float> costs; 
+        vector<double> costs; 
 };

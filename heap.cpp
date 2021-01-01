@@ -4,6 +4,7 @@
  */
 
 #include "heap.h"
+#include "route.h"
 
 Heap::Heap(int num_airports, int start_id) {
     for (int i = 0; i < num_airports; i++) {
@@ -11,7 +12,7 @@ Heap::Heap(int num_airports, int start_id) {
     }
     std::swap(ids[0], ids[start_id]);
 
-    costs.resize(num_airports, 1000);
+    costs.resize(num_airports, INT_MAX);
     costs[start_id] = 0;
 }
 
@@ -53,13 +54,13 @@ void Heap::heapify_down(int idx) {
     }
 }
 
-float Heap::get_cost(int id) const {
+double Heap::get_cost(int id) const {
     return costs[id];
 }
 
 int Heap::get_min_child(int idx) const {
-    int lc_idx = get_lchild(idx);
-    int rc_idx = get_rchild(idx);
+    unsigned long lc_idx = get_lchild(idx);
+    unsigned long rc_idx = get_rchild(idx);
 
     if (lc_idx >= ids.size()) {
         return rc_idx;
@@ -77,14 +78,14 @@ bool Heap::has_child(int idx) const {
     return get_lchild(idx) < ids.size();
 }
 
-int Heap::get_lchild(int idx) const {
+unsigned long Heap::get_lchild(int idx) const {
     return 2 * idx + 1;
 }
 
-int Heap::get_rchild(int idx) const {
+unsigned long Heap::get_rchild(int idx) const {
     return 2 * idx + 2;
 }
 
-int Heap::get_parent(int idx) const {
+unsigned long Heap::get_parent(int idx) const {
     return (idx - 1) / 2;
 }
